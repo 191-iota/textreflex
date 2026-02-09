@@ -56,6 +56,7 @@ Edit `.env` and add your HuggingFace API token:
 
 ```
 HF_API_TOKEN=your_actual_token_here
+# Optional: Set FLASK_DEBUG=true for development (never in production!)
 ```
 
 To get a free HuggingFace API token:
@@ -63,6 +64,8 @@ To get a free HuggingFace API token:
 2. Go to https://huggingface.co/settings/tokens
 3. Create a new token with "Read" access
 4. Copy and paste it into your `.env` file
+
+**Security Note:** Never set `FLASK_DEBUG=true` in production as it can expose sensitive information and allow arbitrary code execution.
 
 ### 5. Run the Application
 
