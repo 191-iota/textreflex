@@ -7,8 +7,9 @@ A lightweight Flask application for detecting emotional manipulation and bias in
 - 🧠 AI-powered bias and manipulation detection
 - 🎨 Clean, dark-themed UI with glassmorphic design
 - 📊 Color-coded severity ratings for manipulation strategies
-- 🚀 Minimal dependencies (Flask + HuggingFace API)
+- 🚀 **Works out of the box** - no API keys or sign-ups required
 - 📱 Responsive design for mobile and desktop
+- 🔑 Optional API token for improved rate limits
 
 ## What It Does
 
@@ -24,7 +25,7 @@ Textreflex analyzes text to identify:
 ### Prerequisites
 
 - Python 3.8 or higher
-- A HuggingFace account and API token (free tier available)
+- **That's it!** No API keys or accounts required to get started
 
 ### 1. Clone the Repository
 
@@ -46,28 +47,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment Variables
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your HuggingFace API token:
-
-```
-HF_API_TOKEN=your_actual_token_here
-# Optional: Set FLASK_DEBUG=true for development (never in production!)
-```
-
-To get a free HuggingFace API token:
-1. Sign up at https://huggingface.co
-2. Go to https://huggingface.co/settings/tokens
-3. Create a new token with "Read" access
-4. Copy and paste it into your `.env` file
-
-**Security Note:** Never set `FLASK_DEBUG=true` in production as it can expose sensitive information and allow arbitrary code execution.
-
-### 5. Run the Application
+### 4. Run the Application
 
 ```bash
 flask run
@@ -80,6 +60,33 @@ python app.py
 ```
 
 The app will be available at http://localhost:5000
+
+**That's it!** The app works immediately with no configuration needed.
+
+### Optional: Add HuggingFace API Token (Recommended)
+
+For better reliability and higher rate limits, you can optionally add a free HuggingFace API token:
+
+1. Sign up at https://huggingface.co (free account)
+2. Go to https://huggingface.co/settings/tokens
+3. Create a new token with "Read" access
+4. Set it as an environment variable:
+
+```bash
+export HF_API_TOKEN=your_actual_token_here
+```
+
+Or create a `.env` file:
+
+```bash
+cp .env.example .env
+# Edit .env and uncomment/set HF_API_TOKEN=your_actual_token_here
+```
+
+**Note:** The token is completely optional. The app works fine without it, but having one provides:
+- Better rate limits
+- Improved reliability during high-traffic periods
+- Priority access to the AI model
 
 ## Usage
 
@@ -133,7 +140,8 @@ The application is intentionally minimal with no build steps, no database, and n
 
 ## Limitations
 
-- Free HuggingFace API has rate limits and may be slower than premium tiers
+- Free HuggingFace API (without token) may have rate limits and slower response times
+- Adding a free HuggingFace token improves performance significantly
 - Analysis quality depends on the AI model's capabilities
 - Results are for educational purposes and should not be considered definitive
 - Maximum text length: 5000 characters

@@ -3,13 +3,17 @@ import json
 import re
 from flask import Flask, render_template, request, jsonify
 import requests
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 app = Flask(__name__)
 
 # HuggingFace API configuration
-HF_API_TOKEN = os.environ.get('HF_API_TOKEN', '')
-HF_API_URL = "https://api-inference.huggingface.co/v1/chat/completions"
+HF_API_TOKEN = os.environ.get('HF_API_TOKEN')  # Optional - improves rate limits if provided
 HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
+HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}/v1/chat/completions"
 
 # The exact prompt from the original backend
 ANALYSIS_PROMPT = """Analyze the following text for emotional-manipulation strategies:
@@ -52,15 +56,14 @@ def analyze():
         if len(text) > 5000:
             return jsonify({'error': 'Text exceeds 5000 character limit'}), 400
         
-        # Check for API token
-        if not HF_API_TOKEN:
-            return jsonify({'error': 'HuggingFace API token not configured. Please set the HF_API_TOKEN environment variable.'}), 500
-        
-        # Call HuggingFace API
+        # Build headers - Authorization is optional
         headers = {
-            'Authorization': f'Bearer {HF_API_TOKEN}',
             'Content-Type': 'application/json'
         }
+        if HF_API_TOKEN:
+            headers['Authorization'] = f'Bearer {HF_API_TOKEN}'
+        
+        # Call HuggingFace API
         
         payload = {
             "model": HF_MODEL,
