@@ -110,22 +110,32 @@ def analyze():
                 # try to extract JSON from reasoning_content
                 if not content and 'reasoning_content' in parsed_response:
                     reasoning = parsed_response['reasoning_content']
-                    # Try to find a JSON object in the reasoning
-                    json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', reasoning, re.DOTALL)
-                    if json_match:
-                        content = json_match.group(0)
+                    # Try to find a JSON object in the reasoning by finding balanced braces
+                    # Start from the first { and find its matching }
+                    brace_count = 0
+                    start_idx = reasoning.find('{')
+                    if start_idx != -1:
+                        for i in range(start_idx, len(reasoning)):
+                            if reasoning[i] == '{':
+                                brace_count += 1
+                            elif reasoning[i] == '}':
+                                brace_count -= 1
+                                if brace_count == 0:
+                                    content = reasoning[start_idx:i+1]
+                                    break
                 
                 if content:
                     ai_content = content
                 # else: ai_content stays as the raw response text, we'll try to extract JSON below
                 
                 # If the parsed response itself has our expected fields, use it directly
-                if all(k in parsed_response for k in ['ratings', 'conclusion']):
+                if all(k in parsed_response for k in ['ratings', 'passages', 'conclusion', 'bs_callout']):
                     result = parsed_response
                     # skip further JSON parsing
                     
-        except (json.JSONDecodeError, ValueError, KeyError, IndexError, TypeError):
+        except (json.JSONDecodeError, ValueError, KeyError, IndexError, TypeError) as e:
             # Not JSON — treat as plain text (which is normal for Pollinations)
+            app.logger.debug(f"Response parsing exception: {type(e).__name__}: {e}")
             pass
         
         # If we don't have a result yet, try to parse ai_content
