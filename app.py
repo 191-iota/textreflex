@@ -13,6 +13,10 @@ MAX_LOG_LENGTH = 500  # Maximum length for logging/error responses
 # Pollinations returns plain text responses, not OpenAI JSON format
 AI_API_URL = "https://text.pollinations.ai/"
 
+# Valid Pollinations AI models (as of 2025)
+# Ordered by preference: direct-output models first, then fallbacks
+VALID_MODELS = ["mistral-large", "mistral", "llama", "command-r-plus", "openai"]
+
 # The exact prompt from the original backend
 ANALYSIS_PROMPT = """Analyze the following text for emotional-manipulation strategies:
 - Identify each strategy (fear, urgency, scapegoating, polarization, tone).
@@ -60,6 +64,7 @@ def analyze():
         }
         
         # Call Pollinations AI API (free, no auth required)
+        # Try multiple models with fallback mechanism
         payload = {
             "messages": [
                 {
@@ -71,16 +76,49 @@ def analyze():
                     "content": f"{ANALYSIS_PROMPT}\n\nText to analyze:\n{text}"
                 }
             ],
-            "model": "openai-large",
+            "model": "mistral-large",  # Will be updated in loop
             "jsonMode": True
         }
         
-        # Increase timeout to 120 seconds for slow free API
-        response = requests.post(AI_API_URL, headers=headers, json=payload, timeout=120)
+        # Try models in order until one succeeds (fallback for 404 errors)
+        response = None
+        last_error = None
+        for model_name in VALID_MODELS:
+            payload["model"] = model_name
+            app.logger.info(f"Trying model: {model_name}")
+            
+            try:
+                # Increase timeout to 120 seconds for slow free API
+                response = requests.post(AI_API_URL, headers=headers, json=payload, timeout=120)
+                
+                # Add debug logging
+                app.logger.info(f"AI API status for {model_name}: {response.status_code}")
+                app.logger.info(f"AI API response (first {MAX_LOG_LENGTH} chars): {response.text[:MAX_LOG_LENGTH]}")
+                
+                # If we get a 404, try the next model
+                if response.status_code == 404:
+                    last_error = f"Model '{model_name}' not found (404)"
+                    app.logger.warning(last_error)
+                    continue
+                
+                # If we got a non-404 status, break and use this response
+                break
+                
+            except requests.Timeout:
+                last_error = f"Timeout with model '{model_name}'"
+                app.logger.warning(last_error)
+                continue
+            except requests.RequestException as e:
+                last_error = f"Request error with model '{model_name}': {str(e)}"
+                app.logger.warning(last_error)
+                continue
         
-        # Add debug logging
-        app.logger.info(f"AI API status: {response.status_code}")
-        app.logger.info(f"AI API response (first {MAX_LOG_LENGTH} chars): {response.text[:MAX_LOG_LENGTH]}")
+        # If all models failed, return error
+        if response is None or response.status_code == 404:
+            return jsonify({
+                'error': 'All AI models failed',
+                'details': last_error or 'Unable to connect to AI service'
+            }), 500
         
         if response.status_code != 200:
             return jsonify({'error': f'AI API error: {response.status_code}', 'details': response.text}), 500
