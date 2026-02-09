@@ -54,7 +54,7 @@ def analyze():
         
         # Check for API token
         if not HF_API_TOKEN:
-            return jsonify({'error': 'HF_API_TOKEN not configured'}), 500
+            return jsonify({'error': 'HuggingFace API token not configured. Please set the HF_API_TOKEN environment variable.'}), 500
         
         # Call HuggingFace API
         headers = {
