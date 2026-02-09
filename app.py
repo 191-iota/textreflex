@@ -3,17 +3,11 @@ import json
 import re
 from flask import Flask, render_template, request, jsonify
 import requests
-from dotenv import load_dotenv
-
-# Load environment variables from .env file if it exists
-load_dotenv()
 
 app = Flask(__name__)
 
-# HuggingFace API configuration
-HF_API_TOKEN = os.environ.get('HF_API_TOKEN')  # Optional - improves rate limits if provided
-HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
-HF_API_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}/v1/chat/completions"
+# Pollinations AI API configuration (free, no auth required)
+AI_API_URL = "https://text.pollinations.ai/"
 
 # The exact prompt from the original backend
 ANALYSIS_PROMPT = """Analyze the following text for emotional-manipulation strategies:
@@ -42,7 +36,7 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    """Analyze text for bias and manipulation using HuggingFace API"""
+    """Analyze text for bias and manipulation using Pollinations AI"""
     try:
         # Get text from request
         data = request.get_json()
@@ -56,28 +50,28 @@ def analyze():
         if len(text) > 5000:
             return jsonify({'error': 'Text exceeds 5000 character limit'}), 400
         
-        # Build headers - Authorization is optional
+        # Build headers - no auth required for Pollinations AI
         headers = {
             'Content-Type': 'application/json'
         }
-        if HF_API_TOKEN:
-            headers['Authorization'] = f'Bearer {HF_API_TOKEN}'
         
-        # Call HuggingFace API
-        
+        # Call Pollinations AI API (free, no auth required)
         payload = {
-            "model": HF_MODEL,
             "messages": [
+                {
+                    "role": "system",
+                    "content": "You must output ONLY valid JSON. Do not include any markdown code fences or explanatory text, just the raw JSON object."
+                },
                 {
                     "role": "user",
                     "content": f"{ANALYSIS_PROMPT}\n\nText to analyze:\n{text}"
                 }
             ],
-            "max_tokens": 2000,
-            "temperature": 0.3
+            "model": "openai",
+            "jsonMode": True
         }
         
-        response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=30)
+        response = requests.post(AI_API_URL, headers=headers, json=payload, timeout=30)
         
         if response.status_code != 200:
             error_msg = response.text
