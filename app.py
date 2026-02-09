@@ -71,9 +71,8 @@ def analyze():
                     "content": f"{ANALYSIS_PROMPT}\n\nText to analyze:\n{text}"
                 }
             ],
-            "model": "openai",
-            "jsonMode": True,
-            "seed": 42
+            "model": "openai-large",
+            "jsonMode": True
         }
         
         # Increase timeout to 120 seconds for slow free API
@@ -86,38 +85,79 @@ def analyze():
         if response.status_code != 200:
             return jsonify({'error': f'AI API error: {response.status_code}', 'details': response.text}), 500
         
-        # Pollinations returns plain text, not OpenAI JSON format
+        # Pollinations returns plain text — get the raw response
         ai_content = response.text.strip()
-        
-        # Strip markdown code fences if present
-        ai_content = re.sub(r'^```(?:json)?\s*\n?', '', ai_content, flags=re.MULTILINE)
-        ai_content = re.sub(r'\n?```\s*$', '', ai_content, flags=re.MULTILINE)
-        ai_content = ai_content.strip()
-        
-        # Try to parse JSON directly first
+
+        # Try to parse as JSON first (some models return JSON wrapper)
         result = None
         try:
-            result = json.loads(ai_content)
-        except json.JSONDecodeError:
-            # If direct parsing fails, try to extract JSON from the response
-            # Find the first { and last } to extract the JSON object
-            json_start = ai_content.find('{')
-            json_end = ai_content.rfind('}')
-            if json_start != -1 and json_end != -1 and json_end > json_start:
-                try:
-                    result = json.loads(ai_content[json_start:json_end + 1])
-                except json.JSONDecodeError as e:
+            parsed_response = json.loads(ai_content)
+            
+            # Check if it's a chat completion style response
+            if isinstance(parsed_response, dict):
+                # Check for content in standard locations
+                content = None
+                
+                # Try choices[0].message.content (OpenAI format)
+                if 'choices' in parsed_response:
+                    content = parsed_response['choices'][0].get('message', {}).get('content', '')
+                
+                # Try direct content field
+                if not content and 'content' in parsed_response:
+                    content = parsed_response['content']
+                
+                # FALLBACK: If content is empty but reasoning_content exists,
+                # try to extract JSON from reasoning_content
+                if not content and 'reasoning_content' in parsed_response:
+                    reasoning = parsed_response['reasoning_content']
+                    # Try to find a JSON object in the reasoning
+                    json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', reasoning, re.DOTALL)
+                    if json_match:
+                        content = json_match.group(0)
+                
+                if content:
+                    ai_content = content
+                # else: ai_content stays as the raw response text, we'll try to extract JSON below
+                
+                # If the parsed response itself has our expected fields, use it directly
+                if all(k in parsed_response for k in ['ratings', 'conclusion']):
+                    result = parsed_response
+                    # skip further JSON parsing
+                    
+        except (json.JSONDecodeError, ValueError, KeyError, IndexError, TypeError):
+            # Not JSON — treat as plain text (which is normal for Pollinations)
+            pass
+        
+        # If we don't have a result yet, try to parse ai_content
+        if result is None:
+            # Strip markdown code fences if present
+            ai_content = re.sub(r'^```(?:json)?\s*\n?', '', ai_content, flags=re.MULTILINE)
+            ai_content = re.sub(r'\n?```\s*$', '', ai_content, flags=re.MULTILINE)
+            ai_content = ai_content.strip()
+            
+            # Try to parse JSON directly first
+            try:
+                result = json.loads(ai_content)
+            except json.JSONDecodeError:
+                # If direct parsing fails, try to extract JSON from the response
+                # Find the first { and last } to extract the JSON object
+                json_start = ai_content.find('{')
+                json_end = ai_content.rfind('}')
+                if json_start != -1 and json_end != -1 and json_end > json_start:
+                    try:
+                        result = json.loads(ai_content[json_start:json_end + 1])
+                    except json.JSONDecodeError as e:
+                        return jsonify({
+                            'error': 'Failed to parse AI response as JSON',
+                            'details': str(e),
+                            'raw_response': ai_content[:MAX_LOG_LENGTH]
+                        }), 500
+                else:
                     return jsonify({
                         'error': 'Failed to parse AI response as JSON',
-                        'details': str(e),
+                        'details': 'No valid JSON found in response',
                         'raw_response': ai_content[:MAX_LOG_LENGTH]
                     }), 500
-            else:
-                return jsonify({
-                    'error': 'Failed to parse AI response as JSON',
-                    'details': 'No valid JSON found in response',
-                    'raw_response': ai_content[:MAX_LOG_LENGTH]
-                }), 500
         
         # Validate expected fields
         required_fields = ['ratings', 'passages', 'conclusion', 'bs_callout']
