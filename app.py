@@ -6,6 +6,9 @@ import requests
 
 app = Flask(__name__)
 
+# Configuration constants
+MAX_LOG_LENGTH = 500  # Maximum length for logging/error responses
+
 # Pollinations AI API configuration (free, no auth required)
 # Pollinations returns plain text responses, not OpenAI JSON format
 AI_API_URL = "https://text.pollinations.ai/"
@@ -78,7 +81,7 @@ def analyze():
         
         # Add debug logging
         app.logger.info(f"AI API status: {response.status_code}")
-        app.logger.info(f"AI API response (first 500 chars): {response.text[:500]}")
+        app.logger.info(f"AI API response (first {MAX_LOG_LENGTH} chars): {response.text[:MAX_LOG_LENGTH]}")
         
         if response.status_code != 200:
             return jsonify({'error': f'AI API error: {response.status_code}', 'details': response.text}), 500
@@ -91,22 +94,30 @@ def analyze():
         ai_content = re.sub(r'\n?```\s*$', '', ai_content, flags=re.MULTILINE)
         ai_content = ai_content.strip()
         
-        # Try to extract JSON from the response if there's extra text around it
-        # Find the first { and last } to extract the JSON object
-        json_start = ai_content.find('{')
-        json_end = ai_content.rfind('}')
-        if json_start != -1 and json_end != -1 and json_end > json_start:
-            ai_content = ai_content[json_start:json_end + 1]
-        
-        # Parse JSON
+        # Try to parse JSON directly first
+        result = None
         try:
             result = json.loads(ai_content)
-        except json.JSONDecodeError as e:
-            return jsonify({
-                'error': 'Failed to parse AI response as JSON',
-                'details': str(e),
-                'raw_response': ai_content[:500]
-            }), 500
+        except json.JSONDecodeError:
+            # If direct parsing fails, try to extract JSON from the response
+            # Find the first { and last } to extract the JSON object
+            json_start = ai_content.find('{')
+            json_end = ai_content.rfind('}')
+            if json_start != -1 and json_end != -1 and json_end > json_start:
+                try:
+                    result = json.loads(ai_content[json_start:json_end + 1])
+                except json.JSONDecodeError as e:
+                    return jsonify({
+                        'error': 'Failed to parse AI response as JSON',
+                        'details': str(e),
+                        'raw_response': ai_content[:MAX_LOG_LENGTH]
+                    }), 500
+            else:
+                return jsonify({
+                    'error': 'Failed to parse AI response as JSON',
+                    'details': 'No valid JSON found in response',
+                    'raw_response': ai_content[:MAX_LOG_LENGTH]
+                }), 500
         
         # Validate expected fields
         required_fields = ['ratings', 'passages', 'conclusion', 'bs_callout']
