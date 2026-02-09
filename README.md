@@ -7,9 +7,9 @@ A lightweight Flask application for detecting emotional manipulation and bias in
 - 🧠 AI-powered bias and manipulation detection
 - 🎨 Clean, dark-themed UI with glassmorphic design
 - 📊 Color-coded severity ratings for manipulation strategies
-- 🚀 **Works out of the box** - no API keys or sign-ups required
+- 🚀 **Works out of the box** - no API keys, no sign-ups, zero configuration required
 - 📱 Responsive design for mobile and desktop
-- 🔑 Optional API token for improved rate limits
+- ⚡ Uses free Pollinations AI - completely free, no rate limits
 
 ## What It Does
 
@@ -25,68 +25,25 @@ Textreflex analyzes text to identify:
 ### Prerequisites
 
 - Python 3.8 or higher
-- **That's it!** No API keys or accounts required to get started
+- **That's it!** No API keys, no accounts, no configuration needed
 
-### 1. Clone the Repository
+### Quick Start (3 steps)
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/191-iota/textreflex.git
 cd textreflex
-```
 
-### 2. Create Virtual Environment
-
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-```bash
+# 2. Install dependencies
 pip install -r requirements.txt
-```
 
-### 4. Run the Application
-
-```bash
+# 3. Run the application
 flask run
-```
-
-Or:
-
-```bash
-python app.py
 ```
 
 The app will be available at http://localhost:5000
 
-**That's it!** The app works immediately with no configuration needed.
-
-### Optional: Add HuggingFace API Token (Recommended)
-
-For better reliability and higher rate limits, you can optionally add a free HuggingFace API token:
-
-1. Sign up at https://huggingface.co (free account)
-2. Go to https://huggingface.co/settings/tokens
-3. Create a new token with "Read" access
-4. Set it as an environment variable:
-
-```bash
-export HF_API_TOKEN=your_actual_token_here
-```
-
-Or create a `.env` file:
-
-```bash
-cp .env.example .env
-# Edit .env and uncomment/set HF_API_TOKEN=your_actual_token_here
-```
-
-**Note:** The token is completely optional. The app works fine without it, but having one provides:
-- Better rate limits
-- Improved reliability during high-traffic periods
-- Priority access to the AI model
+**That's literally it!** Just clone, install, and run. Zero configuration required.
 
 ## Usage
 
@@ -113,8 +70,8 @@ cp .env.example .env
 
 - **Backend**: Python Flask
 - **Frontend**: Vanilla HTML/CSS/JavaScript (no frameworks)
-- **AI Provider**: HuggingFace Inference API (free tier)
-- **Model**: Mistral-7B-Instruct-v0.3
+- **AI Provider**: Pollinations AI (completely free, no auth required)
+- **Model**: OpenAI-compatible models via Pollinations
 - **Database**: None (stateless application)
 
 ## Project Structure
@@ -140,11 +97,10 @@ The application is intentionally minimal with no build steps, no database, and n
 
 ## Limitations
 
-- Free HuggingFace API (without token) may have rate limits and slower response times
-- Adding a free HuggingFace token improves performance significantly
 - Analysis quality depends on the AI model's capabilities
 - Results are for educational purposes and should not be considered definitive
 - Maximum text length: 5000 characters
+- Response time may vary based on API availability (usually 10-30 seconds)
 
 ## License
 
