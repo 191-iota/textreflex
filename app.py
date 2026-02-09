@@ -7,8 +7,8 @@ import requests
 app = Flask(__name__)
 
 # Pollinations AI API configuration (free, no auth required)
-# Using the OpenAI-compatible endpoint which returns proper OpenAI format
-AI_API_URL = "https://text.pollinations.ai/openai/chat/completions"
+# Pollinations returns plain text responses, not OpenAI JSON format
+AI_API_URL = "https://text.pollinations.ai/"
 
 # The exact prompt from the original backend
 ANALYSIS_PROMPT = """Analyze the following text for emotional-manipulation strategies:
@@ -69,60 +69,43 @@ def analyze():
                 }
             ],
             "model": "openai",
-            "jsonMode": True
+            "jsonMode": True,
+            "seed": 42
         }
         
-        # Increase timeout to 60 seconds for slow free API
-        response = requests.post(AI_API_URL, headers=headers, json=payload, timeout=60)
+        # Increase timeout to 120 seconds for slow free API
+        response = requests.post(AI_API_URL, headers=headers, json=payload, timeout=120)
         
         # Add debug logging
         app.logger.info(f"AI API status: {response.status_code}")
         app.logger.info(f"AI API response (first 500 chars): {response.text[:500]}")
         
         if response.status_code != 200:
-            error_msg = response.text
-            return jsonify({
-                'error': f'AI API error: {response.status_code}',
-                'details': error_msg
-            }), 500
+            return jsonify({'error': f'AI API error: {response.status_code}', 'details': response.text}), 500
         
-        # Parse AI response - handle both OpenAI format and plain text
-        raw_response = response.text
-        
-        # Try OpenAI-compatible JSON format first
-        try:
-            ai_response = response.json()
-            if 'choices' in ai_response and ai_response['choices']:
-                # Standard OpenAI format
-                ai_content = ai_response['choices'][0]['message']['content']
-            elif isinstance(ai_response, dict) and 'content' in ai_response:
-                # Maybe response has content directly
-                ai_content = ai_response['content']
-            elif isinstance(ai_response, str):
-                # Response is already a string
-                ai_content = ai_response
-            else:
-                # Unexpected JSON structure - log and use raw response
-                app.logger.warning(f"Unexpected AI response structure: {type(ai_response)}")
-                ai_content = raw_response
-        except (json.JSONDecodeError, ValueError) as e:
-            # Pollinations might return plain text
-            app.logger.info(f"AI response was plain text, not JSON: {str(e)}")
-            ai_content = raw_response
+        # Pollinations returns plain text, not OpenAI JSON format
+        ai_content = response.text.strip()
         
         # Strip markdown code fences if present
-        ai_content = re.sub(r'^```json\s*\n?', '', ai_content, flags=re.MULTILINE)
+        ai_content = re.sub(r'^```(?:json)?\s*\n?', '', ai_content, flags=re.MULTILINE)
         ai_content = re.sub(r'\n?```\s*$', '', ai_content, flags=re.MULTILINE)
         ai_content = ai_content.strip()
         
-        # Parse JSON response
+        # Try to extract JSON from the response if there's extra text around it
+        # Find the first { and last } to extract the JSON object
+        json_start = ai_content.find('{')
+        json_end = ai_content.rfind('}')
+        if json_start != -1 and json_end != -1 and json_end > json_start:
+            ai_content = ai_content[json_start:json_end + 1]
+        
+        # Parse JSON
         try:
             result = json.loads(ai_content)
         except json.JSONDecodeError as e:
             return jsonify({
                 'error': 'Failed to parse AI response as JSON',
                 'details': str(e),
-                'raw_response': ai_content
+                'raw_response': ai_content[:500]
             }), 500
         
         # Validate expected fields
