@@ -129,9 +129,9 @@ def analyze():
                 # else: ai_content stays as the raw response text, we'll try to extract JSON below
                 
                 # If the parsed response itself has our expected fields, use it directly
+                # (this avoids unnecessary re-parsing of ai_content)
                 if all(k in parsed_response for k in ['ratings', 'passages', 'conclusion', 'bs_callout']):
                     result = parsed_response
-                    # skip further JSON parsing
                     
         except (json.JSONDecodeError, ValueError, KeyError, IndexError, TypeError) as e:
             # Not JSON — treat as plain text (which is normal for Pollinations)
