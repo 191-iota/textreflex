@@ -93,16 +93,22 @@ def analyze():
         try:
             ai_response = response.json()
             if 'choices' in ai_response and ai_response['choices']:
+                # Standard OpenAI format
                 ai_content = ai_response['choices'][0]['message']['content']
-            elif isinstance(ai_response, dict):
-                # Maybe the response IS the result directly
-                ai_content = json.dumps(ai_response)
+            elif isinstance(ai_response, dict) and 'content' in ai_response:
+                # Maybe response has content directly
+                ai_content = ai_response['content']
+            elif isinstance(ai_response, str):
+                # Response is already a string
+                ai_content = ai_response
             else:
-                ai_content = str(ai_response)
-        except (json.JSONDecodeError, ValueError):
+                # Unexpected JSON structure - log and use raw response
+                app.logger.warning(f"Unexpected AI response structure: {type(ai_response)}")
+                ai_content = raw_response
+        except (json.JSONDecodeError, ValueError) as e:
             # Pollinations might return plain text
+            app.logger.info(f"AI response was plain text, not JSON: {str(e)}")
             ai_content = raw_response
-            app.logger.info("AI response was plain text, not JSON")
         
         # Strip markdown code fences if present
         ai_content = re.sub(r'^```json\s*\n?', '', ai_content, flags=re.MULTILINE)
