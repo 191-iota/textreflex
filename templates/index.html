@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Textreflex AI - Bias Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0a0a;
+            color: #a0a0a0;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #999;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .char-counter {
+            text-align: right;
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .char-counter.warning {
+            color: #f59e0b;
+        }
+
+        .char-counter.error {
+            color: #ef4444;
+        }
+
+        .disclaimer {
+            display: flex;
+            align-items: start;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .disclaimer input[type="checkbox"] {
+            margin-top: 4px;
+            cursor: pointer;
+        }
+
+        .disclaimer label {
+            margin-bottom: 0;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.2);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #results {
+            display: none;
+        }
+
+        #results.active {
+            display: block;
+        }
+
+        .conclusion {
+            font-style: italic;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: #fff;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .ratings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .rating-item {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .rating-item.none {
+            border-color: #10b981;
+        }
+
+        .rating-item.low {
+            border-color: #3b82f6;
+        }
+
+        .rating-item.mid {
+            border-color: #2563eb;
+        }
+
+        .rating-item.high {
+            border-color: #f59e0b;
+        }
+
+        .rating-item.very-high {
+            border-color: #ef4444;
+        }
+
+        .rating-strategy {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 5px;
+            text-transform: capitalize;
+        }
+
+        .rating-value {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .bs-callout {
+            padding: 20px;
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .bs-callout.no-bs {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: #10b981;
+        }
+
+        .passages-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .passages-list li {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .error-message {
+            padding: 20px;
+            background: rgba(239, 68, 68, 0.2);
+            border-left: 4px solid #ef4444;
+            border-radius: 8px;
+            color: #fca5a5;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .ratings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Textreflex AI</h1>
+            <p class="subtitle">Discover in which ways a text is meant to brainwash you.</p>
+        </header>
+
+        <div class="card">
+            <form id="analysisForm">
+                <div class="form-group">
+                    <label for="textInput">Paste your text here</label>
+                    <textarea 
+                        id="textInput" 
+                        placeholder="Enter or paste text to analyze for bias and manipulation tactics..."
+                        maxlength="5000"
+                    ></textarea>
+                    <div class="char-counter" id="charCounter">0 / 5000 characters</div>
+                </div>
+
+                <div class="disclaimer">
+                    <input type="checkbox" id="disclaimerCheck" required>
+                    <label for="disclaimerCheck">
+                        I understand this is an AI-based analysis and results may not be perfect. 
+                        This tool is for educational purposes only.
+                    </label>
+                </div>
+
+                <button type="submit" id="submitBtn" disabled>
+                    Analyze Text
+                </button>
+            </form>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing text for manipulation patterns...</p>
+        </div>
+
+        <div id="results">
+            <div class="card">
+                <div class="section-title">Meta Analysis</div>
+                <div class="conclusion" id="conclusion"></div>
+
+                <div class="section-title">Manipulation Strategies Detected</div>
+                <div class="ratings-grid" id="ratingsGrid"></div>
+
+                <div id="bsCalloutSection"></div>
+
+                <div id="topPassagesSection"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const charCounter = document.getElementById('charCounter');
+        const disclaimerCheck = document.getElementById('disclaimerCheck');
+        const submitBtn = document.getElementById('submitBtn');
+        const analysisForm = document.getElementById('analysisForm');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+
+        // Auto-resize textarea
+        textInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+            
+            // Update character counter
+            const length = this.value.length;
+            charCounter.textContent = `${length} / 5000 characters`;
+            
+            if (length > 4500) {
+                charCounter.classList.add('error');
+                charCounter.classList.remove('warning');
+            } else if (length > 4000) {
+                charCounter.classList.add('warning');
+                charCounter.classList.remove('error');
+            } else {
+                charCounter.classList.remove('warning', 'error');
+            }
+            
+            updateSubmitButton();
+        });
+
+        disclaimerCheck.addEventListener('change', updateSubmitButton);
+
+        function updateSubmitButton() {
+            const hasText = textInput.value.trim().length > 0;
+            const disclaimerChecked = disclaimerCheck.checked;
+            submitBtn.disabled = !(hasText && disclaimerChecked);
+        }
+
+        analysisForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const text = textInput.value.trim();
+            if (!text) return;
+
+            // Hide results and show loading
+            results.classList.remove('active');
+            loading.classList.add('active');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+
+                displayResults(data);
+                
+                // Smooth scroll to results
+                setTimeout(() => {
+                    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                loading.classList.remove('active');
+                submitBtn.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            // Display conclusion
+            document.getElementById('conclusion').textContent = 
+                data.conclusion || 'No conclusion provided.';
+
+            // Display ratings
+            const ratingsGrid = document.getElementById('ratingsGrid');
+            ratingsGrid.innerHTML = '';
+
+            if (data.ratings && Object.keys(data.ratings).length > 0) {
+                for (const [strategy, rating] of Object.entries(data.ratings)) {
+                    const level = extractLevel(rating);
+                    const item = document.createElement('div');
+                    item.className = `rating-item ${level}`;
+                    item.innerHTML = `
+                        <div class="rating-strategy">${strategy}</div>
+                        <div class="rating-value">${rating}</div>
+                    `;
+                    ratingsGrid.appendChild(item);
+                }
+            } else {
+                ratingsGrid.innerHTML = '<p style="color: #666;">No specific strategies detected.</p>';
+            }
+
+            // Display BS callout
+            const bsCalloutSection = document.getElementById('bsCalloutSection');
+            if (data.bs_callout && data.bs_callout.toLowerCase() === 'yes') {
+                bsCalloutSection.innerHTML = `
+                    <div class="section-title">BS Detection</div>
+                    <div class="bs-callout">
+                        <strong>⚠️ Misleading Claims Detected</strong>
+                        ${data.bs_passage ? `<p style="margin-top: 10px; color: #ccc;">Location: ${data.bs_passage}</p>` : ''}
+                    </div>
+                `;
+            } else {
+                bsCalloutSection.innerHTML = `
+                    <div class="section-title">BS Detection</div>
+                    <div class="bs-callout no-bs">
+                        <strong>✓ No obvious misleading claims detected</strong>
+                    </div>
+                `;
+            }
+
+            // Display top passages
+            const topPassagesSection = document.getElementById('topPassagesSection');
+            if (data.top_passages && data.top_passages.length > 0) {
+                topPassagesSection.innerHTML = `
+                    <div class="section-title">Most Manipulative Passages</div>
+                    <ul class="passages-list">
+                        ${data.top_passages.map(passage => `<li>${passage}</li>`).join('')}
+                    </ul>
+                `;
+            } else {
+                topPassagesSection.innerHTML = '';
+            }
+
+            results.classList.add('active');
+        }
+
+        function extractLevel(ratingString) {
+            const lower = ratingString.toLowerCase();
+            if (lower.includes('very high')) return 'very-high';
+            if (lower.includes('high')) return 'high';
+            if (lower.includes('mid')) return 'mid';
+            if (lower.includes('low')) return 'low';
+            if (lower.includes('none')) return 'none';
+            return 'none';
+        }
+
+        function displayError(message) {
+            results.innerHTML = `
+                <div class="card">
+                    <div class="error-message">
+                        <strong>Error:</strong> ${message}
+                    </div>
+                </div>
+            `;
+            results.classList.add('active');
+        }
+    </script>
+</body>
+</html>
