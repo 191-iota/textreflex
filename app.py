@@ -121,11 +121,11 @@ def analyze():
         return jsonify(result)
     
     except requests.Timeout:
-        return jsonify({'error': 'AI API request timed out'}), 504
+        return jsonify({'error': 'AI API request timed out. Please try again.'}), 504
     except requests.RequestException as e:
-        return jsonify({'error': f'Network error: {str(e)}'}), 500
+        return jsonify({'error': 'Unable to connect to AI service. Please check your internet connection and try again.'}), 500
     except Exception as e:
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+        return jsonify({'error': 'An unexpected error occurred. Please try again.'}), 500
 
 
 if __name__ == '__main__':
