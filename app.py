@@ -114,7 +114,7 @@ def analyze():
                 continue
         
         # If all models failed, return error
-        if response is None or response.status_code == 404:
+        if response is None or (response and response.status_code == 404):
             return jsonify({
                 'error': 'All AI models failed',
                 'details': last_error or 'Unable to connect to AI service'
