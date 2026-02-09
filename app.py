@@ -112,10 +112,10 @@ def analyze():
                     reasoning = parsed_response['reasoning_content']
                     # Try to find a JSON object in the reasoning by finding balanced braces
                     # Start from the first { and find its matching }
-                    brace_count = 0
                     start_idx = reasoning.find('{')
                     if start_idx != -1:
-                        for i in range(start_idx, len(reasoning)):
+                        brace_count = 1  # We already have the opening brace
+                        for i in range(start_idx + 1, len(reasoning)):
                             if reasoning[i] == '{':
                                 brace_count += 1
                             elif reasoning[i] == '}':
