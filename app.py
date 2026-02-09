@@ -20,7 +20,7 @@ VALID_MODELS = ["mistral-large", "mistral", "llama", "command-r-plus", "openai"]
 # The exact prompt from the original backend
 ANALYSIS_PROMPT = """Analyze the following text for emotional-manipulation strategies:
 - Identify each strategy (fear, urgency, scapegoating, polarization, tone).
-- Rate each on scale <none/low/mid/high: why>.
+- Rate each on scale <none/low/mid/high/very high: why>.
 - Provide the exact character or sentence ranges for each rating.
 - Call out any false or misleading ("BS") claims with brief reasoning and ranges.
 - List the top three most manipulative passages under "top_passages".
