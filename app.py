@@ -7,7 +7,8 @@ import requests
 app = Flask(__name__)
 
 # Pollinations AI API configuration (free, no auth required)
-AI_API_URL = "https://text.pollinations.ai/"
+# Using the OpenAI-compatible endpoint which returns proper OpenAI format
+AI_API_URL = "https://text.pollinations.ai/openai/chat/completions"
 
 # The exact prompt from the original backend
 ANALYSIS_PROMPT = """Analyze the following text for emotional-manipulation strategies:
@@ -71,7 +72,12 @@ def analyze():
             "jsonMode": True
         }
         
-        response = requests.post(AI_API_URL, headers=headers, json=payload, timeout=30)
+        # Increase timeout to 60 seconds for slow free API
+        response = requests.post(AI_API_URL, headers=headers, json=payload, timeout=60)
+        
+        # Add debug logging
+        app.logger.info(f"AI API status: {response.status_code}")
+        app.logger.info(f"AI API response (first 500 chars): {response.text[:500]}")
         
         if response.status_code != 200:
             error_msg = response.text
@@ -80,13 +86,23 @@ def analyze():
                 'details': error_msg
             }), 500
         
-        # Parse AI response
-        ai_response = response.json()
+        # Parse AI response - handle both OpenAI format and plain text
+        raw_response = response.text
         
-        if 'choices' not in ai_response or not ai_response['choices']:
-            return jsonify({'error': 'Invalid AI response format'}), 500
-        
-        ai_content = ai_response['choices'][0]['message']['content']
+        # Try OpenAI-compatible JSON format first
+        try:
+            ai_response = response.json()
+            if 'choices' in ai_response and ai_response['choices']:
+                ai_content = ai_response['choices'][0]['message']['content']
+            elif isinstance(ai_response, dict):
+                # Maybe the response IS the result directly
+                ai_content = json.dumps(ai_response)
+            else:
+                ai_content = str(ai_response)
+        except (json.JSONDecodeError, ValueError):
+            # Pollinations might return plain text
+            ai_content = raw_response
+            app.logger.info("AI response was plain text, not JSON")
         
         # Strip markdown code fences if present
         ai_content = re.sub(r'^```json\s*\n?', '', ai_content, flags=re.MULTILINE)
