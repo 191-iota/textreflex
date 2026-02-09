@@ -13,7 +13,7 @@ app = Flask(__name__)
 # HuggingFace API configuration
 HF_API_TOKEN = os.environ.get('HF_API_TOKEN')  # Optional - improves rate limits if provided
 HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
-HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}/v1/chat/completions"
+HF_API_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}/v1/chat/completions"
 
 # The exact prompt from the original backend
 ANALYSIS_PROMPT = """Analyze the following text for emotional-manipulation strategies:
