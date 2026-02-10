@@ -4,12 +4,12 @@ A lightweight Flask application for detecting emotional manipulation and bias in
 
 ## Features
 
-- 🧠 AI-powered bias and manipulation detection
-- 🎨 Clean, dark-themed UI with glassmorphic design
-- 📊 Color-coded severity ratings for manipulation strategies
-- 🚀 **Works out of the box** - no API keys, no sign-ups, zero configuration required
-- 📱 Responsive design for mobile and desktop
-- ⚡ Uses free Pollinations AI - completely free, no rate limits
+- AI-powered bias and manipulation detection
+- Clean, dark-themed UI with glassmorphic design
+- Color-coded severity ratings for manipulation strategies
+- **Works out of the box** - no API keys, no sign-ups, zero configuration required
+- Responsive design for mobile and desktop
+- Uses free Pollinations AI - completely free, no rate limits
 
 ## What It Does
 
@@ -60,11 +60,11 @@ The app will be available at http://localhost:5000
 
 ## Color Coding
 
-- 🟢 **Green** (None): No manipulation detected
-- 🔵 **Light Blue** (Low): Minimal manipulation
-- 🔵 **Blue** (Mid): Moderate manipulation
-- 🟡 **Yellow** (High): Significant manipulation
-- 🔴 **Red** (Very High): Severe manipulation
+- **Green** (None): No manipulation detected
+- **Light Blue** (Low): Minimal manipulation
+- **Blue** (Mid): Moderate manipulation
+- **Yellow** (High): Significant manipulation
+- **Red** (Very High): Severe manipulation
 
 ## Technical Stack
 
