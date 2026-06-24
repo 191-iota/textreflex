@@ -1,111 +1,56 @@
-# Textreflex AI
+# textreflex
 
-A lightweight Flask application for detecting emotional manipulation and bias in text using AI.
+Paste a piece of writing and textreflex shows how it is built to move you: which emotional-manipulation strategies it uses (fear, urgency, scapegoating, polarization, tone), where they appear, whether it makes misleading claims, and what the text as a whole is really trying to do. It is a small Flask app with a single page and no database.
 
-## Features
+![A finished analysis](docs/screenshot.png)
 
-- AI-powered bias and manipulation detection
-- Clean, dark-themed UI with glassmorphic design
-- Color-coded severity ratings for manipulation strategies
-- **Works out of the box** - no API keys, no sign-ups, zero configuration required
-- Responsive design for mobile and desktop
-- Uses free Pollinations AI - completely free, no rate limits
+## Free and keyless
 
-## What It Does
+textreflex runs entirely on a free, no-auth AI endpoint. There are no API keys, no sign-ups, and nothing to configure — clone it, run it, use it. That is the whole point: the moment a tool like this needs you to paste in an API key, you may as well call the model yourself.
 
-Textreflex analyzes text to identify:
-- **Manipulation strategies**: fear, urgency, scapegoating, polarization, tone
-- **Severity levels**: none, low, mid, high, very high
-- **Misleading claims**: BS detection with reasoning
-- **Top manipulative passages**: most concerning sections
-- **Meta analysis**: overall manipulative intent of the text
+The trade-off of staying keyless is that the free endpoint rate-limits, so the app retries with a short backoff when it is busy. If a request comes back asking you to try again in a few seconds, that is the rate limit, not a bug. The provider chain is written as a list, so if another genuinely keyless endpoint becomes available it slots in as one entry.
 
-## Setup Instructions
+## Running it
 
-### Prerequisites
-
-- Python 3.8 or higher
-- **That's it!** No API keys, no accounts, no configuration needed
-
-### Quick Start (3 steps)
+You need Python 3.8 or newer.
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/191-iota/textreflex.git
 cd textreflex
-
-# 2. Install dependencies
 pip install -r requirements.txt
-
-# 3. Run the application
-flask run
+python app.py
 ```
 
-The app will be available at http://localhost:5000
+The app serves on http://localhost:5000 (or `$PORT` if set). Paste text, tick the disclaimer, and analyze. A run usually takes a few seconds to half a minute.
 
-**That's literally it!** Just clone, install, and run. Zero configuration required.
+## What you get back
 
-## Usage
+For a given text the result contains:
 
-1. Open http://localhost:5000 in your browser
-2. Paste any text (up to 5000 characters) into the textarea
-3. Check the disclaimer checkbox
-4. Click "Analyze Text"
-5. Wait for the AI analysis (usually 10-30 seconds)
-6. Review the results:
-   - **Meta Analysis**: Overall manipulative intent
-   - **Manipulation Strategies**: Color-coded severity ratings
-   - **BS Detection**: Flagged misleading claims
-   - **Top Passages**: Most manipulative sections
+- a per-strategy rating from none to very high, each with a short reason
+- the character or sentence range where each strategy appears
+- a flag for misleading or false claims, with their location
+- the three most manipulative passages
+- a meta analysis of the text's overall intent
 
-## Color Coding
+It runs on the AI's judgement, so treat the output as a prompt for your own thinking rather than a verdict. Maximum input length is 5000 characters.
 
-- **Green** (None): No manipulation detected
-- **Light Blue** (Low): Minimal manipulation
-- **Blue** (Mid): Moderate manipulation
-- **Yellow** (High): Significant manipulation
-- **Red** (Very High): Severe manipulation
+## Configuration
 
-## Technical Stack
+Nothing is required. A few optional environment variables exist (see `.env.example`): `AI_TIMEOUT` and `AI_RETRIES` tune how long the app waits and how hard it retries a busy endpoint, `POLLINATIONS_TOKEN` raises the free rate limits if you happen to have one, and `POLLINATIONS_MODEL` overrides the model.
 
-- **Backend**: Python Flask
-- **Frontend**: Vanilla HTML/CSS/JavaScript (no frameworks)
-- **AI Provider**: Pollinations AI (completely free, no auth required)
-- **Model**: OpenAI-compatible models via Pollinations
-- **Database**: None (stateless application)
-
-## Project Structure
+## Project structure
 
 ```
 textreflex/
-├── app.py                 # Flask backend with API endpoints
+├── app.py               # Flask backend: the keyless provider chain and /analyze
 ├── templates/
-│   └── index.html        # Single-page frontend
-├── requirements.txt       # Python dependencies
-├── .env.example          # Environment variable template
-├── .gitignore            # Git ignore rules
-└── README.md             # This file
+│   └── index.html       # single-page frontend
+├── requirements.txt
+├── .env.example
+└── docs/                # README screenshots
 ```
-
-## Development
-
-The application is intentionally minimal with no build steps, no database, and no heavy frameworks. To make changes:
-
-1. Edit `app.py` for backend logic
-2. Edit `templates/index.html` for frontend UI
-3. Restart Flask to see changes (or use `flask run --reload`)
-
-## Limitations
-
-- Analysis quality depends on the AI model's capabilities
-- Results are for educational purposes and should not be considered definitive
-- Maximum text length: 5000 characters
-- Response time may vary based on API availability (usually 10-30 seconds)
 
 ## License
 
-MIT
-
-## Credits
-
-Built as a lightweight replacement for the original two-repository TextReflex stack (Angular + Spring Boot).
+MIT.
