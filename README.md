@@ -2,7 +2,7 @@
 
 Paste a piece of writing and textreflex shows how it is built to move you: which emotional-manipulation strategies it uses (fear, urgency, scapegoating, polarization, tone), where they appear, whether it makes misleading claims, and what the text as a whole is really trying to do. It is a small Flask app with a single page and no database.
 
-![A finished analysis](docs/screenshot.png)
+![textreflex analyzing a piece of text](docs/demo.gif)
 
 ## Free and keyless
 
